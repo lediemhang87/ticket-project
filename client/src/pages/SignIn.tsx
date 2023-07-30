@@ -17,11 +17,11 @@ const SignIn: React.FC = () => {
       const data = await result.json();
       console.warn(data);
       if (result.ok) {
-        alert("Signed in successfully");
+        alert(data.message); // Use data.message to show the success/error message
         setEmail("");
         setPassword("");
       } else {
-        alert("Invalid email or password");
+        alert(data.message); // Use data.message to show the success/error message
       }
     } catch (error) {
       console.error("Error:", error);

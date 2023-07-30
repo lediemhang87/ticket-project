@@ -95,7 +95,7 @@ app.post("/signin", async (req, res) => {
 
     // If the user doesn't exist, send an error response
     if (!user) {
-      return res.status(401).send("Invalid email or password");
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     // Compare the provided password with the hashed password stored in the database
@@ -103,16 +103,17 @@ app.post("/signin", async (req, res) => {
 
     // If the password doesn't match, send an error response
     if (!passwordMatch) {
-      return res.status(401).send("Invalid email or password");
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     // Password matches, send success response
-    res.status(200).send("Signed in successfully");
+    res.status(200).json({ message: "Signed in successfully" });
   } catch (e) {
     console.error("Error:", e);
-    res.status(500).send("Something Went Wrong");
+    res.status(500).json({ message: "Something Went Wrong" });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`App is listening on port ${port}`);
