@@ -1,15 +1,24 @@
 import React, { useState, FormEvent } from "react";
 
 const SignUp: React.FC = () => {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleOnSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       const result = await fetch("https://ticketproj.onrender.com/register", {
         method: "POST",
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          phoneNumber,
+          password,
+        }),
         headers: {
           "Content-Type": "application/json",
         },
@@ -19,7 +28,10 @@ const SignUp: React.FC = () => {
       if (result.ok) {
         alert("Data saved successfully");
         setEmail("");
-        setName("");
+        setFirstName("");
+        setLastName("");
+        setPhoneNumber("");
+        setPassword("");
       } else {
         alert("Failed to save data");
       }
@@ -35,17 +47,35 @@ const SignUp: React.FC = () => {
       <form onSubmit={handleOnSubmit}>
         <input
           type="text"
-          placeholder="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          placeholder="First Name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Last Name"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
         />
         <input
           type="email"
-          placeholder="email"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <button type="submit">submit</button>
+        <input
+          type="tel"
+          placeholder="Phone Number"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button type="submit">Submit</button>
       </form>
     </>
   );
