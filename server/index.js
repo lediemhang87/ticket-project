@@ -86,6 +86,34 @@ app.post("/register", async (req, res) => {
   }
 });
 
+app.post("/signin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find the user with the given email
+    const user = await User.findOne({ email });
+
+    // If the user doesn't exist, send an error response
+    if (!user) {
+      return res.status(401).send("Invalid email or password");
+    }
+
+    // Compare the provided password with the hashed password stored in the database
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    // If the password doesn't match, send an error response
+    if (!passwordMatch) {
+      return res.status(401).send("Invalid email or password");
+    }
+
+    // Password matches, send success response
+    res.status(200).send("Signed in successfully");
+  } catch (e) {
+    console.error("Error:", e);
+    res.status(500).send("Something Went Wrong");
+  }
+});
+
 app.listen(port, () => {
   console.log(`App is listening on port ${port}`);
 });
