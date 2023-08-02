@@ -120,6 +120,24 @@ app.get("/logout", (req, res) => {
   });
 });
 
+app.get("/user", async (req, res) => {
+  if (req.session.userId) {
+    try {
+      const user = await User.findById(req.session.userId);
+      if (user) {
+        res.status(200).json(user);
+      } else {
+        res.status(404).json({ message: "User not found" });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  } else {
+    res.status(401).json({ message: "Not authenticated" });
+  }
+});
+
 app.post("/register", async (req, res) => {
   try {
     const { firstName, lastName, email, phoneNumber, password } = req.body;
