@@ -66,6 +66,58 @@ const Event = mongoose.model("Event", EventSchema);
 
 app.use(express.json());
 app.use(cors());
+app.use(
+  session({
+    secret: "your-secret-key-here", // Replace with a strong secret key
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+
+app.post("/signin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    req.session.userId = user._id;
+    res.status(200).json({ message: "Login successful" });
+  } catch (e) {
+    console.error("Error:", e);
+    res.status(500).json({ message: "Something Went Wrong" });
+  }
+});
+
+app.get("/check-auth", async (req, res) => {
+  if (req.session.userId) {
+    const user = await User.findById(req.session.userId);
+    if (user) {
+      res.status(200).json({ user });
+    } else {
+      res.status(401).json({ message: "Not authenticated" });
+    }
+  } else {
+    res.status(401).json({ message: "Not authenticated" });
+  }
+});
+
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Error:", err);
+    }
+    res.clearCookie("connect.sid");
+    res.status(200).json({ message: "Logged out successfully" });
+  });
+});
 
 app.post("/register", async (req, res) => {
   try {
