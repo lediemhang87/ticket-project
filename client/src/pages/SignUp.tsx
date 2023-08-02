@@ -10,7 +10,6 @@ const SignUp: React.FC = () => {
   const handleOnSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-    //   const result = await fetch("https://ticketproj.onrender.com/register", {
         const result = await fetch("https://ticketproj.onrender.com/register",{
         method: "POST",
         body: JSON.stringify({

@@ -7,7 +7,6 @@ const SignIn: React.FC = () => {
   const handleSignIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      //   const result = await fetch("https://ticketproj.onrender.com/signin", {
       const result = await fetch("https://ticketproj.onrender.com/signin", {
         method: "POST",
         body: JSON.stringify({ email, password }),
@@ -18,11 +17,11 @@ const SignIn: React.FC = () => {
       const data = await result.json();
       console.warn(data);
       if (result.ok) {
-        alert(data.message); // Use data.message to show the success/error message
+        alert(data.message); 
         setEmail("");
         setPassword("");
       } else {
-        alert(data.message); // Use data.message to show the success/error message
+        alert(data.message); 
       }
     } catch (error) {
       console.error("Error:", error);
