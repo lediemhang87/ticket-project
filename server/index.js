@@ -205,6 +205,37 @@ app.post("/events", async (req, res) => {
   }
 });
 
+app.post("/register", async (req, res) => {
+  try {
+    const { firstName, lastName, email, phoneNumber, password } = req.body;
+
+    // Check if the email or phone number is already registered
+    const existingUser = await User.findOne({ $or: [{ email }, { phoneNumber }] });
+    if (existingUser) {
+      return res.status(409).json({ message: "Email or phone number already registered" });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user
+    const newUser = new User({
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      password: hashedPassword,
+    });
+
+    // Save the new user to the database
+    const savedUser = await newUser.save();
+
+    res.status(201).json({ message: "Registration successful", user: savedUser });
+  } catch (e) {
+    console.error("Error during registration:", e);
+    res.status(500).json({ message: "Something Went Wrong" });
+  }
+});
 app.listen(port, () => {
   console.log(`App is listening on port ${port}`);
 });

@@ -43,7 +43,7 @@ const SignUp: React.FC = () => {
 
   return (
     <>
-      <h1>This is React WebApp</h1>
+      <h1> Sign Up For An Account </h1>
       <form onSubmit={handleOnSubmit}>
         <input
           type="text"
