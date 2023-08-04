@@ -1,12 +1,16 @@
-
 const express = require("express");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
-const cors = require("cors");
-const session = require("express-session");
 require("dotenv").config();
 
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+app.use(cors());
+
 const port = process.env.PORT || 5000;
 const options = {
   useNewUrlParser: true,
@@ -47,33 +51,50 @@ const UserSchema = new mongoose.Schema({
   },
 });
 
+const TicketTypeSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  price: {
+    type: Number,
+    required: true,
+  },
+});
+
 const EventSchema = new mongoose.Schema({
   eventName: {
     type: String,
     required: true,
   },
   eventDate: {
-    type: String,
+    type: String, // Changed the type to string
     required: true,
   },
   eventDetail: {
     type: String,
     required: true,
   },
+  ticketStartDate: {
+    type: String, // Changed the type to string
+    required: true,
+  },
+  ticketEndDate: {
+    type: String, // Changed the type to string
+    required: true,
+  },
+  ticketTypes: [TicketTypeSchema],
 });
 
 const User = mongoose.model("User", UserSchema);
 const Event = mongoose.model("Event", EventSchema);
+const TicketType = mongoose.model("TicketType", TicketTypeSchema);
 
-app.use(express.json());
-app.use(cors());
-app.use(
-  session({
-    secret: "your-secret-key-here", // Replace with a strong secret key
-    resave: false,
-    saveUninitialized: true,
-  })
-);
+const generateAccessToken = (user) => {
+  return jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+};
 
 app.post("/signin", async (req, res) => {
   try {
@@ -85,81 +106,66 @@ app.post("/signin", async (req, res) => {
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
 
-    req.session.userId = user._id;
-    res.status(200).json({ message: "Login successful" });
+    if (passwordMatch) {
+      const accessToken = generateAccessToken(user);
+      res.json({ message: "Login successful", accessToken });
+    } else {
+      res.json({ message: "Invalid email or password" });
+      return;
+    }
   } catch (e) {
     console.error("Error:", e);
     res.status(500).json({ message: "Something Went Wrong" });
   }
 });
 
-app.get("/check-auth", async (req, res) => {
-  if (req.session.userId) {
-    const user = await User.findById(req.session.userId);
+const authenticateToken = (req, res, next) => {
+  const accessToken = req.header("Authorization")?.split(" ")[1];
+  if (!accessToken) return res.status(401).json({ message: "Not authenticated" });
+
+  jwt.verify(accessToken, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: "Invalid token" });
+    req.user = user;
+    next();
+  });
+};
+
+app.get("/check-auth", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
     if (user) {
       res.status(200).json({ user });
     } else {
       res.status(401).json({ message: "Not authenticated" });
     }
-  } else {
-    res.status(401).json({ message: "Not authenticated" });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Something went wrong" });
   }
 });
 
 app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Error:", err);
-    }
-    res.clearCookie("connect.sid");
+  try {
+    res.clearCookie("access_token");
     res.status(200).json({ message: "Logged out successfully" });
-  });
-});
-
-app.get("/user", async (req, res) => {
-  if (req.session.userId) {
-    try {
-      const user = await User.findById(req.session.userId);
-      if (user) {
-        res.status(200).json(user);
-      } else {
-        res.status(404).json({ message: "User not found" });
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      res.status(500).json({ message: "Something went wrong" });
-    }
-  } else {
-    res.status(401).json({ message: "Not authenticated" });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Something went wrong" });
   }
 });
 
-app.post("/register", async (req, res) => {
+app.get("/user", authenticateToken, async (req, res) => {
   try {
-    const { firstName, lastName, email, phoneNumber, password } = req.body;
-
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    const user = new User({
-      firstName,
-      lastName,
-      email,
-      phoneNumber,
-      password: hashedPassword,
-    });
-
-    const savedUser = await user.save();
-    savedUser.password = undefined;
-
-    res.status(201).json(savedUser);
-  } catch (e) {
-    console.error("Error:", e);
-    res.status(500).json({ message: "Something Went Wrong" });
+    const user = await User.findById(req.user.userId);
+    if (user) {
+      res.status(200).json({ user });
+    } else {
+      res.status(401).json({ message: "Not authenticated" });
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Something went wrong" });
   }
 });
 
@@ -175,19 +181,26 @@ app.get("/events", async (req, res) => {
 
 app.post("/events", async (req, res) => {
   try {
-    const { eventName, eventDate, eventDetail } = req.body;
+    const { eventName, eventDate, eventDetail, ticketStartDate, ticketEndDate, ticketTypes } = req.body;
+
+    console.log("Received data from the client:", req.body);
 
     const event = new Event({
       eventName,
-      eventDate,
+      eventDate: new Date(eventDate),
       eventDetail,
+      ticketStartDate: new Date(ticketStartDate),
+      ticketEndDate: new Date(ticketEndDate),
+      ticketTypes,
     });
 
     const savedEvent = await event.save();
 
+    console.log("Event saved successfully:", savedEvent);
+
     res.status(201).json(savedEvent);
   } catch (e) {
-    console.error("Error:", e);
+    console.error("Error saving event:", e);
     res.status(500).json({ message: "Something Went Wrong" });
   }
 });

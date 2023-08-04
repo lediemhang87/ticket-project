@@ -1,7 +1,7 @@
 // src/App.tsx
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
 interface Event {
   _id: string;
@@ -16,10 +16,12 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get<Event[]>('https://ticketproj.onrender.com/events');
+        const response = await axios.get<Event[]>(
+          "https://ticketproj.onrender.com/events"
+        );
         setEvents(response.data);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        console.error("Error fetching events:", error);
       }
     };
 
@@ -33,19 +35,34 @@ const Home: React.FC = () => {
       {events.length === 0 ? (
         <p>No events found.</p>
       ) : (
-        <ul>
+        <div>
           {events.map((event) => (
-            <li key={event._id}>
-              <strong>{event.eventName}</strong> - {event.eventDate} - {event.eventDetail}
-            </li>
+            <div className="border rounded p-2" key={event._id}>
+              <Link to={`/event/${event._id}`}>
+                <strong>{event.eventName}</strong> <br />
+                {event.eventDate} <br />
+                {event.eventDetail}
+              </Link>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
-    <Link to='/addevent'> <button>  Add Event </button></Link><br/>
-    <Link to='/signup'> <button>Register Account </button></Link><br/>
-    <Link to='/signin'> <button> Sign In </button></Link><br/>
-
+      <Link to="/addevent">
+        {" "}
+        <button> Add Event </button>
+      </Link>
+      <br />
+      <Link to="/signup">
+        {" "}
+        <button>Register Account </button>
+      </Link>
+      <br />
+      <Link to="/signin">
+        {" "}
+        <button> Sign In </button>
+      </Link>
+      <br />
     </div>
   );
 };

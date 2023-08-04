@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 interface User {
   _id: string;
@@ -7,64 +8,56 @@ interface User {
   lastName: string;
   email: string;
   phoneNumber: string;
-}
-
-interface Event {
-  _id: string;
-  eventName: string;
-  eventDate: string;
+  date: string;
 }
 
 const Dashboard: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [events, setEvents] = useState<Event[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch user data from backend
-    fetchUserData();
-    // Fetch events data from backend
-    fetchEventsData();
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get<{ user: User }>(
+          "https://ticketproj.onrender.com/user",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
+        );
+        setUser(response.data.user);
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+
+    fetchUser();
   }, []);
 
-  const fetchUserData = async () => {
+  const handleLogout = async () => {
     try {
-      const response = await axios.get<User>("https://ticketproj.onrender.com/user"); // Replace with your backend user endpoint
-      setUser(response.data);
+      await axios.get("http://localhost:5000/logout");
+      localStorage.removeItem("accessToken");
+      setUser(null); // Clear the user information on logout
+      navigate("/");
     } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  };
-
-  const fetchEventsData = async () => {
-    try {
-      const response = await axios.get<Event[]>("https://ticketproj.onrender.com/events"); // Replace with your backend events endpoint
-      setEvents(response.data);
-    } catch (error) {
-      console.error("Error fetching events data:", error);
+      console.error("Error:", error);
     }
   };
 
   return (
     <div>
-      <h1>Welcome to the Dashboard</h1>
-      {user && (
+      {user ? (
         <div>
-          <h2>User Details</h2>
-          <p>Name: {user.firstName} {user.lastName}</p>
+          <h1>Welcome to the Dashboard, {user.firstName}!</h1>
           <p>Email: {user.email}</p>
           <p>Phone Number: {user.phoneNumber}</p>
+          <button onClick={handleLogout}>Logout</button>
         </div>
-      )}
-      {events.length > 0 && (
+      ) : (
         <div>
-          <h2>Events</h2>
-          <ul>
-            {events.map((event) => (
-              <li key={event._id}>
-                <strong>{event.eventName}</strong> - {event.eventDate}
-              </li>
-            ))}
-          </ul>
+          <div> Please log in </div>
         </div>
       )}
     </div>

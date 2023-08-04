@@ -1,17 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const SignIn = () => {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
+  const navigate = useNavigate();
   const handleSignIn = async (e) => {
     e.preventDefault();
     try {
@@ -19,35 +14,40 @@ const SignIn = () => {
         email,
         password,
       });
-      alert(response.data.message);
-      setEmail("");
-      setPassword("");
-      checkAuthStatus();
-      navigate("/dashboard");
-
+      if (response.data.accessToken) {
+        localStorage.setItem("accessToken", response.data.accessToken);
+        setIsLoggedIn(true);
+        navigate("/dashboard");
+      } else {
+        alert(response.data.message);
+      }
     } catch (error) {
       console.error("Error:", error);
       alert("Something went wrong");
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await axios.get("https://ticketproj.onrender.com/logout");
-      setIsLoggedIn(false);
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Something went wrong");
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    setIsLoggedIn(false);
   };
 
   const checkAuthStatus = async () => {
-    try {
-      const response = await axios.get("https://ticketproj.onrender.com/check-auth");
-      setIsLoggedIn(true);
-      console.log("User:", response.data.user);
-    } catch (error) {
-      console.error("Error:", error);
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
+      try {
+        const response = await axios.get("http://localhost:5000/check-auth", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        setIsLoggedIn(true);
+        console.log("User:", response.data.user);
+      } catch (error) {
+        console.error("Error:", error);
+        setIsLoggedIn(false);
+      }
+    } else {
       setIsLoggedIn(false);
     }
   };
@@ -84,4 +84,3 @@ const SignIn = () => {
 };
 
 export default SignIn;
-
